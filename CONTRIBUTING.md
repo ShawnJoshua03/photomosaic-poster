@@ -18,8 +18,17 @@ pytest
 
 ## Layout
 
-- `src/mosaic_poster/tiles.py`: finding, decoding, caching and de-duplicating photos
-- `src/mosaic_poster/assign.py`: choosing which photo goes in which tile
-- `src/mosaic_poster/color.py`: Lab color matching, print adjustments and CMYK
-- `src/mosaic_poster/render.py`: layout, drawing in strips, panels and file output
-- `src/mosaic_poster/cli.py`: the `mosaic-poster` command
+- `formats.py`: reading any photo: images, HEIC/AVIF, camera RAW, video frames, zips
+- `tiles.py`: decoding photos into tiles, caching, duplicates and look-alikes
+- `assign.py`: choosing which photo goes in which tile
+- `plan.py`: layout math and target-photo measurements
+- `color.py`: Lab color, print color compensation, CMYK profiles
+- `printers.py`: printer and paper presets
+- `advice.py`: rule checks and recommendations (add new printer lessons here)
+- `proof.py`: print simulation and soft-proof previews
+- `report.py`: the HTML report
+- `render.py`: drawing in strips, panels, test strips, fallbacks and file output
+- `compare.py`, `collect.py`: the `compare` and `collect` commands
+- `cli.py`: the `mosaic-poster` command
+
+All of these live in `src/mosaic_poster/`.

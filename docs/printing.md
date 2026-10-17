@@ -1,98 +1,135 @@
 # Printing guide
 
 A mosaic poster has thousands of tiny photos, so getting the file right for the printer
-matters more than usual. This page covers what to ask, what to send, and how to fix the
-usual problems.
+matters more than usual. Start with a preset, check, test, then print.
 
-## 1. Ask the printer three things
-
-1. **Maximum width.** Wide-format plotters take rolls, often 24" or 36" wide, but the
-   length can be almost anything. A 36-inch roll can print 36×54, for example.
-2. **File rules.** Many shops post them: color mode (RGB or CMYK), DPI, file type and a
-   maximum file size.
-3. **Paper.** Glossy or matte photo paper shows the most detail. Uncoated bond paper
-   soaks up ink, so prints come out darker and flatter.
-
-## 2. Pick the size and tiles
-
-Keep tiles around **0.5 inch** or larger if people should recognize faces in them:
-
-```
-columns ≈ poster width in inches × 2
-```
-
-For example, a 36-inch-wide poster gets about 66–72 columns. You also need enough photos
-for that many tiles; see the table in the README. `--cols 0`, the default, does this math
-for you.
-
-The shape of the target photo matters. A portrait photo suits a portrait poster. If the
-photo and poster shapes differ, the target is cropped (see `--crop` and `--focus-y`).
-
-## 3. Make the file
-
-| The printer asks for | Use |
-|---|---|
-| Nothing specific, photo lab | `-o poster.jpg --dpi 300` |
-| CMYK | `--cmyk` with `.jpg`, `.pdf` or `.tif` output |
-| A maximum file size | `--max-mb 74`, safely under a "75 MB" rule |
-| PDF | `-o poster.pdf` (one page at exactly the print size) |
-| 300 DPI | `--dpi 300` |
-
-**A typical plotter job:**
+## 1. Pick a preset (or tell it about your printer)
 
 ```bash
-mosaic-poster target.jpg photos/ -o poster.pdf --size 36x54 --dpi 300 \
-    --cmyk --max-mb 74 --brightness 1.05 --contrast 1.1 --saturation 1.15
+mosaic-poster printers
 ```
 
-**What `--max-mb` does:** a 36×54 inch poster at 300 DPI is 175 megapixels. The tool finds
-the highest JPEG quality that fits the limit. RGB compresses much better than CMYK, so RGB
-files get much higher quality at the same size. Use CMYK only if the printer asks for it.
+| Preset | Paper it assumes | What it sends |
+|---|---|---|
+| `plotter-bond` | uncoated bond | CMYK PDF, 300 DPI, under 75 MB, max 36 in wide |
+| `photo-lab` | luster | sRGB JPEG, 300 DPI |
+| `print-shop` | matte | PDF / TIFF / JPEG, 300 DPI |
+| `canvas` | canvas | sRGB JPEG, 200 DPI |
+| `office-inkjet` | plain | for test prints, letter / A4 |
 
-**CMYK color:** the tool converts with a CMYK ICC profile already on your computer.
-On Windows that's SWOP. On macOS it's Generic CMYK. If you have the shop's own profile,
-pass it with `--cmyk-profile shop.icc`.
+These are typical rules. If your shop posts its own, for example "CMYK, 300 dpi, JPEG or
+PDF/X-1a, under 75 MB, 36 inch max", the individual options always override the preset:
+`--cmyk/--rgb`, `--dpi`, `-o file.pdf`, `--max-mb`, `--size`.
 
-## 4. At the printer
+## 2. Check before you render
 
-- **Scale:** print at **100%**. Turn off "fit to page", or it adds margins and shrinks
-  the poster.
-- **Quality:** use **Best** or high quality, not Normal or Fast. The tiny photos are the
-  point.
-- **Preview:** check the preview is upright and not cropped.
-- **Drying:** let it dry before rolling it. Bond paper smudges easily in dark areas.
-- **Test strip:** for big jobs, print a strip first (`--panels`, or crop a test area).
+```bash
+mosaic-poster check target.jpg photos/ --printer plotter-bond --size 36x54
+```
+
+This takes seconds and catches the expensive mistakes:
+
+- **Too wide:** the poster is wider than the roll. It suggests rotating or scaling,
+  with the exact `--size`.
+- **Wrong file type:** the printer doesn't take the format you chose.
+- **CMYK JPEG on a plotter:** many reject it from USB, so it suggests a PDF.
+- **Too many repeats:** it suggests a `--cols` value, or collecting more photos.
+- **Tiles too small:** people couldn't recognize the photos.
+- **Weak target photo:** too dark, low contrast, low resolution, or the wrong shape.
+- **Skipped files:** RAW or video files it needs an extra decoder for.
+
+Errors stop a render, unless you add `--force`.
+
+## 3. See what it will look like on paper
+
+Every render writes `poster.report.html` and `poster.preview.jpg`. The report shows:
+
+- **On paper, from across the room:** the whole poster as printed.
+- **On screen:** the file itself, for comparison.
+- **Up close, actual size:** a 6 × 4 inch patch around the face at real size on a typical
+  monitor.
+- **Magnified 3×:** for judging how sharp the little photos print.
+
+**How accurate is it?**
+- **With `--printer-profile shop.icc`:** an ICC soft proof, the same method as
+  Photoshop's *Proof Colors*. Ask your print shop for the profile of the printer and
+  paper they'll use.
+- **Without a profile:** a paper simulation of paper white, black depth, dot gain, color
+  range and ink spread. It's good for the "will bond paper look dull?" question, but
+  approximate.
+- **CMYK files:** colors are also round-tripped through the CMYK profile, and the report
+  says what share of the picture changes color noticeably.
+
+For a file you already have: `mosaic-poster proof poster.jpg --printer plotter-bond`.
+
+## 4. Paper color compensation
+
+Uncoated paper, like bond and plain paper, soaks up ink, so prints come out darker,
+flatter and softer. Presets apply a correction automatically, and you can set it
+yourself:
+
+| Paper | brightness | contrast | saturation |
+|---|---|---|---|
+| bond | 1.05 | 1.10 | 1.15 |
+| plain | 1.04 | 1.08 | 1.12 |
+| matte | 1.00 | 1.05 | 1.07 |
+| canvas | 1.00 | 1.05 | 1.08 |
+| luster | 1.00 | 1.00 | 1.03 |
+| glossy | 1.00 | 1.00 | 1.00 |
+
+## 5. Test, then print
+
+```bash
+mosaic-poster target.jpg photos/ --printer plotter-bond --size 36x54 --test-strip --fallbacks
+```
+
+- **`--test-strip`:** writes `poster.test-strip.pdf`, a full-width 3-inch slice through the
+  face, in the same format and color as the real file. Printing it checks three things
+  cheaply: the printer accepts the file, the colors are right, and the photos are big
+  enough.
+- **`--fallbacks`:** writes `poster.alt-rgb.jpg` and other alternatives, so you have
+  something else to try at the printer.
+
+**At the printer:**
+- **Scale:** print at **100%**, with "fit to page" off.
+- **Quality:** use **Best**, not Normal. Normal visibly blurs the small photos.
+- **Preview:** check the printer's preview is upright and not cropped.
+- **One file at a time.**
+- **Drying:** let the ink dry before rolling. Bond smudges easily in dark areas.
 
 ## Troubleshooting
 
-**"File contains format errors" / HP DesignJet error 61:08.2 when printing from USB.**
-The printer's built-in USB reader can't open the file type, even if the shop's sign says
-it's allowed. That rule usually means files their computer processes. Try these, one file
-at a time:
+**"File contains format errors. The printer cannot process the job" (HP DesignJet
+61:08.2) when printing from USB.**
+The plotter's built-in reader can't open that file. CMYK JPEGs are the usual cause, even
+when the shop's sign says CMYK and JPEG are allowed. The PDF version prints. In order:
 
-1. A PDF: `-o poster.pdf` (works with `--cmyk` too).
-2. The plainest RGB JPEG: `-o poster.jpg --no-optimize`.
-3. CMYK JPEG without an embedded profile: `-o poster.jpg --cmyk --no-icc --no-optimize`.
+1. `-o poster.pdf`, the CMYK PDF.
+2. `poster.alt-rgb.jpg` from `--fallbacks`.
+3. `--no-optimize --no-icc`, the plainest possible encoding.
 
 **The printer stops or crashes partway through.**
-Plotters can run out of memory on very large images. Split the poster into panels:
+Very large jobs can exhaust a plotter's memory. Split the poster:
 
 ```bash
 --panels 2 --overlap 0.5
 ```
 
-This writes `poster_part1of2.pdf` and `poster_part2of2.pdf`, each with half an inch of
-overlap so you can trim and join them neatly. A seam across a background area, below the
-face, is hard to notice.
+This writes `poster_part1of2.pdf` and `poster_part2of2.pdf`, with half an inch of overlap
+for trimming and joining. The seam usually falls in the background. Print the test strip
+first to rule out a file problem.
 
-**The colors look odd when I open the file on my computer.**
-Many photo viewers show CMYK files wrong, too dark or with odd colors. Check with the
-`--save-target` image or an RGB export instead.
+**The JPEG quality had to drop low to fit the size limit.**
+A 36 × 54 inch poster at 300 DPI is 175 megapixels. RGB compresses much better than CMYK.
+Splitting into panels gives each part the full size limit. On bond or matte paper, quality
+in the 50s is rarely visible.
+
+**The colors look odd when I open the file.**
+Many viewers show CMYK files wrong. Trust `poster.preview.jpg` and the report.
 
 **The face isn't recognizable.**
-Raise `--overlay` (0.4–0.5) and `--tint` (0.6–0.7), crop tighter on the face with `--crop`,
-or use a brighter, higher-contrast photo. A front-facing, well-lit close-up works best.
+Raise `--overlay` (0.4–0.5) and `--tint` (0.6–0.7), or crop tighter with `--crop`. Or run
+`mosaic-poster compare` to find a better target photo: front-facing, well lit and sharp.
 
 **I can see too many repeats.**
-Use fewer columns, add photos, or lower `--max-repeats`. Burst shots count as one photo
-because they look alike.
+Use fewer columns, or collect more photos. Burst shots count as one photo.
