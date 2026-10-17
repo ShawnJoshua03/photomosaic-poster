@@ -31,6 +31,17 @@ mosaic poster. Python 3.9+, Pillow, numpy, pillow-heif; optional rawpy (RAW) and
 Each new printer lesson becomes a preset field in `printers.py` and a check in
 `advice.py`.
 
+## Web app (web/, "Tessera")
+
+Browser version: everything runs on the visitor's device (nothing uploaded). TypeScript + Vite,
+no framework. `web/src/engine/` mirrors the Python modules (assign, advice, presets, paper
+simulation); `studio.ts` ties state together; `export.worker.ts` builds the full-size PDF/JPEG in
+strips; `decode.worker.ts` imports photos (HEIC via lazy-loaded `heic-to`, RAW via embedded JPEG).
+- Dev: `cd web && npm ci && npm run dev`; checks: `npx tsc --noEmit && npx vitest run && npm run build`
+- Keep `presets.ts`/`advice.ts` in step with `printers.py`/`advice.py`.
+- Strict CSP in `index.html`: no inline scripts or styles, no outside connections.
+- Export never holds the whole poster as one image: strips are compressed as they're drawn.
+
 ## Rules
 
 - **Never commit real photos of people.** Tests and docs use generated images, and
