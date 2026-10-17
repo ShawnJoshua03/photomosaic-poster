@@ -21,13 +21,13 @@ it yourself.*
 Requires Python 3.9 or newer.
 
 ```bash
-pip install git+https://github.com/OWNER/photomosaic-poster.git
+pip install git+https://github.com/ShawnJoshua03/photomosaic-poster.git
 ```
 
 Or from a clone:
 
 ```bash
-git clone https://github.com/OWNER/photomosaic-poster.git
+git clone https://github.com/ShawnJoshua03/photomosaic-poster.git
 cd photomosaic-poster
 pip install -e .
 ```
