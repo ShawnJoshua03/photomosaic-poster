@@ -70,3 +70,5 @@ a { color: var(--tip); }
   .results { order: -1; } .sticky { position: static; }
 }
 @media (prefers-reduced-motion: reduce) { .bar > div { transition: none; } }
+/* Nothing to show until a picture has been rendered. */
+.view[width="10"], .close:has(canvas[width="10"]) { display: none; }
