@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "photomosaic-poster"
+dynamic = ["version"]
+description = "Make printable photo mosaic posters: one big picture built from hundreds of your photos."
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.9"
+dependencies = [
+    "Pillow>=10.1",
+    "numpy>=1.24",
+    "pillow-heif>=0.13",
+]
+keywords = ["photo mosaic", "poster", "print", "birthday", "collage"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Topic :: Multimedia :: Graphics",
+    "Environment :: Console",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7"]
+
+[project.scripts]
+mosaic-poster = "mosaic_poster.cli:main"
+
+[tool.setuptools.dynamic]
+version = { attr = "mosaic_poster.__version__" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
