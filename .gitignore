@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+venv/
+.pytest_cache/
+
+# Decoded-photo caches
+.mosaic-cache/
+*.npz
+
+# Personal photos and finished posters never belong in the repo.
+# (The demo images in docs/ are generated and are the only images committed.)
+*.jpg
+*.jpeg
+*.png
+*.heic
+*.heif
+*.webp
+*.tif
+*.tiff
+*.pdf
+*.mov
+*.mp4
+!docs/*.jpg
+
+# Generated demo inputs (python examples/make_demo.py)
+examples/demo_input/
