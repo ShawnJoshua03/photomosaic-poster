@@ -61,6 +61,29 @@ def test_collect_rejects_bad_requests(server):
     assert all(folder in p.parents for p in saved)  # no escaping the folder
 
 
+def test_collect_security_headers_and_names(server):
+    url, folder = server
+    r = urllib.request.urlopen(f"{url}/?k=secret-key")
+    assert "default-src 'none'" in r.headers["Content-Security-Policy"]
+    assert r.headers["Referrer-Policy"] == "no-referrer"   # the key never leaks
+    assert r.headers["X-Frame-Options"] == "DENY"
+    _post(f"{url}/upload?k=secret-key&name=NUL.jpg&who=CON", b"x")
+    saved = [p.relative_to(folder).as_posix() for p in folder.rglob("*") if p.is_file()]
+    assert saved == ["_CON/_NUL.jpg"]  # Windows-reserved names made safe
+
+
+def test_collect_stops_when_folder_is_full(tmp_path):
+    col = _Collector(tmp_path / "in", "k", "t", max_mb=1, max_total_gb=0.000001)  # 1 KB
+    httpd = ThreadingHTTPServer(("127.0.0.1", 0), _handler(col))
+    threading.Thread(target=httpd.serve_forever, daemon=True).start()
+    url = f"http://127.0.0.1:{httpd.server_address[1]}"
+    _post(f"{url}/upload?k=k&name=a.jpg", b"x" * 900)
+    with pytest.raises(urllib.error.HTTPError) as e:
+        _post(f"{url}/upload?k=k&name=b.jpg", b"x" * 900)
+    assert e.value.code == 507
+    httpd.shutdown()
+
+
 def test_compare_ranks_targets(target, photos, tmp_path):
     flat = tmp_path / "flat.jpg"
     Image.new("RGB", (60, 90), (128, 128, 128)).save(flat)

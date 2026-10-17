@@ -22,7 +22,8 @@ def load_tiles(sources, tile_px, cache=None, include_videos=False):
     re-rendering with different settings skips the slow decode.
     """
     refs, skipped = scan(sources, include_videos)
-    sig = hashlib.md5(("\n".join(r.key for r in refs) + f"|{tile_px}").encode()).hexdigest()
+    sig = hashlib.md5(("\n".join(r.key for r in refs) + f"|{tile_px}").encode(),
+                      usedforsecurity=False).hexdigest()  # cache key, not security
     if cache and Path(cache).exists():
         with np.load(cache, allow_pickle=False) as z:
             if str(z["sig"]) == sig:
@@ -40,8 +41,7 @@ def load_tiles(sources, tile_px, cache=None, include_videos=False):
 
 
 def _decode_one(ref, tile_px):
-    data = ref.read_bytes()
-    digest = hashlib.md5(data).hexdigest()
+    digest = ref.digest()
     im = open_photo(ref, draft=(tile_px * 2, tile_px * 2))
     # Slightly above center: people's faces usually sit in the upper half.
     im = ImageOps.fit(im, (tile_px, tile_px), Image.LANCZOS, centering=(0.5, 0.4))

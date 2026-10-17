@@ -42,7 +42,7 @@ def compare_targets(targets, sources, out_path, width_in=24, height_in=36, sampl
     refs, _ = scan(sources)
     if not refs:
         raise SystemExit("No photos found.")
-    rng = random.Random(seed)
+    rng = random.Random(seed)  # nosec B311
     pick = refs if len(refs) <= sample else rng.sample(refs, sample)
     log.info(f"Decoding a sample of {len(pick)} of {len(refs)} photos for previews...")
     _, tiles, _ = decode_tiles(pick, tile_px)

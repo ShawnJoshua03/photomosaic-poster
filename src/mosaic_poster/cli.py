@@ -274,9 +274,14 @@ def cmd_collect(argv):
     ap.add_argument("--port", type=int, default=8000)
     ap.add_argument("--title", default="Send your photos for the poster")
     ap.add_argument("--max-mb", type=float, default=500, help="largest single file accepted")
+    ap.add_argument("--max-total-gb", type=float, default=20,
+                    help="stop accepting uploads once the folder holds this much")
+    ap.add_argument("--local-only", action="store_true",
+                    help="only this computer can connect (use with a tunnel)")
     ap.add_argument("--key", help="link key (default: random)")
     args = ap.parse_args(argv)
-    serve(args.folder, args.port, args.title, args.key, args.max_mb)
+    serve(args.folder, args.port, args.title, args.key, args.max_mb, args.max_total_gb,
+          args.local_only)
     return 0
 
 

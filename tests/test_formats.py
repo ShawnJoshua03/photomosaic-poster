@@ -78,6 +78,23 @@ def _png_bytes(color):
     return buf.getvalue()
 
 
+def test_decompression_bombs_are_refused(tmp_path):
+    # A tiny PNG that claims to be 30,000 x 30,000 pixels (900 MP).
+    import struct
+    import zlib
+    w = h = 30000
+    ihdr = struct.pack(">IIBBBBB", w, h, 8, 0, 0, 0, 0)
+    chunk = lambda t, d: (struct.pack(">I", len(d)) + t + d
+                          + struct.pack(">I", zlib.crc32(t + d) & 0xFFFFFFFF))
+    data = (b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", ihdr)
+            + chunk(b"IDAT", zlib.compress(b"")) + chunk(b"IEND", b""))
+    (tmp_path / "bomb.png").write_bytes(data)
+    Image.new("RGB", (40, 40), RED).save(tmp_path / "ok.jpg")
+    names, _, skipped = load_tiles([tmp_path], 8)
+    assert names == ["ok.jpg"]                   # the bomb is skipped...
+    assert skipped["unreadable or damaged"] == 1  # ...and reported, not loaded
+
+
 def test_skipped_files_are_explained(tmp_path):
     (tmp_path / "clip.mov").write_bytes(b"\0" * 10)
     (tmp_path / "notes.txt").write_text("hi")
