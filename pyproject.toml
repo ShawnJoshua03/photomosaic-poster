@@ -24,7 +24,10 @@ classifiers = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=7"]
+raw = ["rawpy>=0.19"]      # camera RAW: .cr2 .nef .arw .dng ...
+video = ["av>=12"]         # a frame from each video (--include-videos)
+all = ["rawpy>=0.19", "av>=12"]
+dev = ["pytest>=7", "rawpy>=0.19", "av>=12"]
 
 [project.scripts]
 mosaic-poster = "mosaic_poster.cli:main"

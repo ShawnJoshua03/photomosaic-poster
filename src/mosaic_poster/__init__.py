@@ -1,6 +1,7 @@
 """Make printable photo mosaic posters from a folder of photos."""
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
-from .render import PosterOptions, make_poster  # noqa: E402
+from .render import PosterOptions, PreflightError, RenderResult, make_poster, preflight  # noqa: E402
 
-__all__ = ["PosterOptions", "make_poster", "__version__"]
+__all__ = ["PosterOptions", "PreflightError", "RenderResult", "make_poster", "preflight",
+           "__version__"]
