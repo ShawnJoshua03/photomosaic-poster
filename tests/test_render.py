@@ -6,6 +6,7 @@ import pytest
 from PIL import Image
 
 from mosaic_poster import PosterOptions, PreflightError, make_poster, preflight
+from mosaic_poster.color import find_cmyk_profile
 from mosaic_poster.plan import auto_cols
 
 
@@ -111,7 +112,11 @@ def test_report_and_previews(target, photos, tmp_path):
                  "Checks and recommendations", "bond", "100% scale"):
         assert text in html
     assert (tmp_path / "r.preview.jpg").exists()
-    assert res.gamut_pct is not None  # CMYK round trip measured
+    titles = [f.title for f in res.findings]
+    if find_cmyk_profile():
+        assert res.gamut_pct is not None  # CMYK round trip measured
+    else:  # e.g. Linux/macOS CI: the user is told how to get accurate CMYK
+        assert "No CMYK color profile found on this computer" in titles
 
 
 def test_printer_rules_stop_impossible_jobs(target, photos, tmp_path):

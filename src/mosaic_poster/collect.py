@@ -8,6 +8,7 @@ The page is protected by a random key in its link. On the same Wi-Fi it works as
 for friends elsewhere, expose it with a tunnel (see docs/collecting-photos.md).
 """
 import hmac
+import html
 import json
 import re
 import secrets
@@ -81,26 +82,41 @@ def _handler(col):
             if not self._authorized(q):
                 return self._send(403, "This link is missing its key.", "text/plain")
             if u.path == "/":
-                return self._send(200, _PAGE.replace("{{TITLE}}", col.title)
-                                  .replace("{{KEY}}", col.key), "text/html; charset=utf-8")
+                page = (_PAGE.replace("{{TITLE}}", html.escape(col.title))
+                        .replace("{{KEY}}", col.key)
+                        .replace("{{MAX}}", str(int(col.max_bytes))))
+                return self._send(200, page, "text/html; charset=utf-8")
             if u.path == "/stats":
                 return self._send(200, json.dumps(col.stats()))
             self._send(404, "not found", "text/plain")
 
+        def _reject(self, code, msg, length):
+            # Read (and discard) a modest body first: replying mid-upload makes the
+            # sender see "connection reset" instead of the actual reason.
+            if 0 < length <= min(col.max_bytes, 50e6):
+                left = length
+                while left:
+                    chunk = self.rfile.read(min(CHUNK, left))
+                    if not chunk:
+                        break
+                    left -= len(chunk)
+            self.close_connection = True
+            self._send(code, json.dumps({"error": msg}))
+
         def do_POST(self):
             u = urlparse(self.path)
             q = parse_qs(u.query)
-            if u.path != "/upload" or not self._authorized(q):
-                return self._send(403, '{"error":"forbidden"}')
-            name = q.get("name", ["photo"])[0]
-            if Path(name).suffix.lower() not in ALLOWED:
-                return self._send(415, json.dumps({"error": f"{name}: not a photo or video"}))
             try:
                 length = int(self.headers.get("Content-Length", "0"))
             except ValueError:
                 length = 0
+            if u.path != "/upload" or not self._authorized(q):
+                return self._reject(403, "forbidden", length)
+            name = q.get("name", ["photo"])[0]
+            if Path(name).suffix.lower() not in ALLOWED:
+                return self._reject(415, f"{name}: not a photo or video", length)
             if length <= 0 or length > col.max_bytes:
-                return self._send(413, json.dumps({"error": "file too large or empty"}))
+                return self._reject(413, "file too large or empty", length)
             path = col.target(q.get("who", ["guest"])[0], name)
             part = path.with_name(path.name + ".part")
             try:
@@ -184,7 +200,7 @@ poster. Originals are best - no need to resize anything.</div>
 <div id="errs" class="bad muted"></div></div>
 <div class="card muted" id="total"></div>
 <script>
-const KEY="{{KEY}}",who=document.getElementById("who"),drop=document.getElementById("drop"),
+const KEY="{{KEY}}",MAX={{MAX}},who=document.getElementById("who"),drop=document.getElementById("drop"),
 input=document.getElementById("files"),bar=document.getElementById("bar"),
 statusEl=document.getElementById("status"),errs=document.getElementById("errs"),
 total=document.getElementById("total");
@@ -204,6 +220,9 @@ function upload(file,onProgress){return new Promise((res,rej)=>{
  x.onload=()=>x.status==200?res(JSON.parse(x.responseText)):rej(new Error(x.responseText));
  x.onerror=()=>rej(new Error("network error"));x.send(file)})}
 async function send(files){
+ const big=files.filter(f=>f.size>MAX);
+ if(big.length){errs.textContent+=`Too large to send: ${big.map(f=>f.name).join(", ")}. `;
+  files=files.filter(f=>f.size<=MAX)}
  if(!files.length)return;
  if(!who.value.trim()){who.focus();statusEl.textContent="Add your name first, then choose the photos again.";return}
  const sizes=files.map(f=>f.size),all=sizes.reduce((a,b)=>a+b,0),loaded=new Array(files.length).fill(0);

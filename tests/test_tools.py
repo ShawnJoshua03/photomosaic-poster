@@ -1,4 +1,5 @@
 """The helper commands: collect, compare, proof, check, printers."""
+import http.client
 import json
 import threading
 import urllib.error
@@ -42,13 +43,19 @@ def test_collect_saves_uploads_per_person(server):
 def test_collect_rejects_bad_requests(server):
     url, folder = server
     for path, data, code in [
-        ("/upload?k=wrong&name=a.jpg", b"x", 403),                       # wrong key
-        ("/upload?k=secret-key&name=virus.exe", b"x", 415),               # not a photo
-        ("/upload?k=secret-key&name=big.jpg", b"x" * 2_000_000, 413),     # over max_mb
+        ("/upload?k=wrong&name=a.jpg", b"x" * 5000, 403),                # wrong key
+        ("/upload?k=secret-key&name=virus.exe", b"x" * 5000, 415),        # not a photo
     ]:
         with pytest.raises(urllib.error.HTTPError) as e:
             _post(url + path, data)
-        assert e.value.code == code
+        assert e.value.code == code  # a clean error, not a reset connection
+    # Over the size limit: refused from the headers alone, before any upload.
+    host, port = url.removeprefix("http://").split(":")
+    c = http.client.HTTPConnection(host, int(port))
+    c.putrequest("POST", "/upload?k=secret-key&name=big.jpg")
+    c.putheader("Content-Length", "2000000")
+    c.endheaders()
+    assert c.getresponse().status == 413
     _post(f"{url}/upload?k=secret-key&name=../../evil.jpg&who=../..", b"x")
     saved = [p for p in folder.rglob("*") if p.is_file()]
     assert all(folder in p.parents for p in saved)  # no escaping the folder

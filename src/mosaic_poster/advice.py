@@ -4,6 +4,7 @@ Every lesson from making real posters lives here as a check with a concrete fix.
 """
 from dataclasses import dataclass
 
+from .color import find_cmyk_profile
 from .plan import auto_cols
 
 LEVELS = ("error", "warn", "tip", "ok")
@@ -146,6 +147,13 @@ def advise(opt, plan, printer=None, paper=None, target=None, n_files=0, skipped=
             f.append(Finding("tip", "The poster shape doesn't match the photo", detail, fix))
 
     # ---- paper and output ------------------------------------------------------------
+    if opt.cmyk and not opt.cmyk_profile and not find_cmyk_profile():
+        f.append(Finding("warn", "No CMYK color profile found on this computer",
+                         "CMYK files will use a basic conversion, and the preview can't show "
+                         "how CMYK shifts colors. Ask the print shop for their profile, or "
+                         "download a standard one (Adobe U.S. Web Coated SWOP, ECI ISO "
+                         "Coated v2).", "--cmyk-profile profile.icc   (or --rgb if the shop "
+                         "accepts RGB)"))
     if paper and paper.finish and (opt.brightness, opt.contrast, opt.saturation) == (1, 1, 1):
         tweak = " ".join(f"--{k} {v:g}" for k, v in paper.finish.items())
         f.append(Finding("tip", f"{paper.name}: pre-compensate the color", paper.notes, tweak))
