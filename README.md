@@ -17,7 +17,7 @@ covers the whole job, not just the mosaic:
 
 | Target picture | Poster (600 photos) | Close up |
 |---|---|---|
-| ![target](docs/demo-target.jpg) | ![poster](docs/demo.jpg) | ![close up](docs/demo-closeup.jpg) |
+| ![target](https://raw.githubusercontent.com/ShawnJoshua03/photomosaic-poster/main/docs/demo-target.jpg) | ![poster](https://raw.githubusercontent.com/ShawnJoshua03/photomosaic-poster/main/docs/demo.jpg) | ![close up](https://raw.githubusercontent.com/ShawnJoshua03/photomosaic-poster/main/docs/demo-closeup.jpg) |
 
 *The demo is built from generated images. Run `python examples/make_demo.py` to make
 it yourself.*
@@ -27,7 +27,7 @@ it yourself.*
 Requires Python 3.9 or newer.
 
 ```bash
-pip install "photomosaic-poster[all] @ git+https://github.com/ShawnJoshua03/photomosaic-poster.git"
+pip install "photomosaic-poster[all]"
 ```
 
 `[all]` adds camera RAW (`rawpy`) and video-frame (`av`) support. Leave it off if you
@@ -154,9 +154,9 @@ print(result.outputs, result.report)
 
 ## Docs
 
-- **[Printing guide](docs/printing.md):** printer rules, paper, previews and
+- **[Printing guide](https://github.com/ShawnJoshua03/photomosaic-poster/blob/main/docs/printing.md):** printer rules, paper, previews and
   troubleshooting.
-- **[Collecting photos](docs/collecting-photos.md):** the upload page, Drive, iCloud
+- **[Collecting photos](https://github.com/ShawnJoshua03/photomosaic-poster/blob/main/docs/collecting-photos.md):** the upload page, Drive, iCloud
   and choosing the target.
 
 ## Privacy

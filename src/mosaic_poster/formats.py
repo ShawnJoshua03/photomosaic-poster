@@ -1,5 +1,6 @@
 """Reading photos from anywhere: every common image format, camera RAW, video frames,
 and photos inside .zip files (how Google Drive and iCloud hand over big downloads)."""
+import hashlib
 import io
 import logging
 import zipfile
@@ -29,7 +30,11 @@ try:
 except ImportError:
     av = None
 
-Image.MAX_IMAGE_PIXELS = None  # phone panoramas and scans can be huge
+# Phone panoramas reach ~100 MP; anything far beyond that is a "decompression bomb"
+# (a tiny file claiming billions of pixels) and is refused instead of eating all memory.
+Image.MAX_IMAGE_PIXELS = 400_000_000
+MAX_FILE_BYTES = 2_000_000_000  # skip absurdly large files (and zip members) outright
+MAX_IN_MEMORY = 400_000_000     # bigger photos/videos are decoded from disk, not RAM
 
 IMAGE_EXTS = {
     ".jpg", ".jpeg", ".jpe", ".jfif", ".png", ".webp", ".gif", ".bmp", ".dib",
@@ -60,11 +65,28 @@ class PhotoRef:
     def key(self):
         return f"{self.path}|{self.member}|{self.size}"
 
-    def read_bytes(self):
+    def open(self):
+        """A binary file object for the photo (read straight from the zip if needed)."""
         if self.member:
-            with zipfile.ZipFile(self.path) as z:
-                return z.read(self.member)
-        return Path(self.path).read_bytes()
+            z = zipfile.ZipFile(self.path)
+            f = z.open(self.member)
+            f._owner_zip = z  # keep the archive open as long as the member is
+            return f
+        return open(self.path, "rb")
+
+    def read_bytes(self):
+        if self.size > MAX_IN_MEMORY:
+            raise ValueError(f"too large to load ({self.size / 1e6:.0f} MB)")
+        with self.open() as f:
+            return f.read()
+
+    def digest(self):
+        """Content hash (for spotting duplicates), read in chunks."""
+        h = hashlib.md5(usedforsecurity=False)  # duplicate detection, not security
+        with self.open() as f:
+            for chunk in iter(lambda: f.read(1 << 20), b""):
+                h.update(chunk)
+        return h.hexdigest()
 
 
 def _kind(name):
@@ -92,6 +114,8 @@ def scan(sources, include_videos=False):
         kind = _kind(name)
         if kind is None:
             skipped["not a photo"] += 1
+        elif size > MAX_FILE_BYTES:
+            skipped["file over 2 GB"] += 1
         elif kind == "raw" and rawpy is None:
             skipped["camera RAW (pip install rawpy)"] += 1
         elif kind == "video" and not include_videos:
@@ -133,21 +157,21 @@ def open_photo(source, draft=None):
     source: a PhotoRef, a path, or raw bytes. draft: (w, h) hint so big JPEGs and RAW
     files can be decoded at reduced size, which is much faster for small tiles.
     """
-    if isinstance(source, PhotoRef):
-        kind, data, name = source.kind, source.read_bytes(), source.name
-    else:
-        name = str(source)
-        kind = _kind(name) or "image"
-        data = Path(source).read_bytes()
-    if kind == "raw":
-        return _open_raw(data, draft)
-    if kind == "video":
-        return _open_video(data)
-    return _to_rgb(_open_image(data, draft), name)
+    if not isinstance(source, PhotoRef):
+        p = Path(source)
+        source = PhotoRef(p.name, _kind(p.name) or "image", str(p), "", p.stat().st_size)
+    # Files on disk are handed to the decoders by path (videos can be gigabytes);
+    # zip members are read into memory, within MAX_IN_MEMORY.
+    src = source.path if not source.member else io.BytesIO(source.read_bytes())
+    if source.kind == "raw":
+        return _open_raw(src, draft)
+    if source.kind == "video":
+        return _open_video(src)
+    return _to_rgb(_open_image(src, draft), source.name)
 
 
-def _open_image(data, draft):
-    im = Image.open(io.BytesIO(data))
+def _open_image(src, draft):
+    im = Image.open(src)
     if getattr(im, "n_frames", 1) > 1:
         im.seek(0)  # animated GIF/WebP, multi-page TIFF: use the first frame
     if draft and im.format == "JPEG":
@@ -171,10 +195,10 @@ _RAW_FLIP = {3: Image.Transpose.ROTATE_180, 5: Image.Transpose.ROTATE_90,
              6: Image.Transpose.ROTATE_270}
 
 
-def _open_raw(data, draft):
+def _open_raw(src, draft):
     if rawpy is None:
         raise RuntimeError("camera RAW needs: pip install rawpy")
-    with rawpy.imread(io.BytesIO(data)) as raw:
+    with rawpy.imread(src) as raw:
         flip = raw.sizes.flip
         if draft:
             # The embedded preview JPEG is plenty for a tile and ~50x faster to decode.
@@ -195,11 +219,11 @@ def _open_raw(data, draft):
         return Image.fromarray(rgb)  # postprocess already applies the camera rotation
 
 
-def _open_video(data):
+def _open_video(src):
     """A frame from the middle of a video (phone videos, Live Photo clips)."""
     if av is None:
         raise RuntimeError("video frames need: pip install av")
-    with av.open(io.BytesIO(data)) as container:
+    with av.open(src) as container:
         stream = container.streams.video[0]
         if stream.duration and stream.time_base:
             container.seek(int(stream.duration // 2), stream=stream)

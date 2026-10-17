@@ -1,0 +1,46 @@
+name: Printer report
+description: A printer or print shop rejected the file, printed it wrong, or worked great.
+title: "[printer] "
+labels: [printer]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Printer quirks are the most useful thing you can share; they become presets and
+        troubleshooting tips. Please don't attach photos of people - describe instead.
+  - type: input
+    id: printer
+    attributes:
+      label: Printer or service
+      placeholder: "HP DesignJet T830 (printing from USB) / Walgreens 24x36 / local shop"
+    validations:
+      required: true
+  - type: input
+    id: paper
+    attributes:
+      label: Paper
+      placeholder: "bond, matte, luster, canvas..."
+  - type: textarea
+    id: rules
+    attributes:
+      label: The printer's file rules (if posted)
+      placeholder: "CMYK, 300 dpi, JPEG or PDF/X-1a, under 75 MB, 36 inch max width"
+  - type: textarea
+    id: command
+    attributes:
+      label: Command you ran
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: result
+    attributes:
+      label: What happened
+      description: Exact error message or code (a photo of the printer screen is fine), and what the print looked like.
+    validations:
+      required: true
+  - type: dropdown
+    id: worked
+    attributes:
+      label: Did something end up working?
+      options: ["Yes (describe above)", "No", "Haven't tried anything else"]

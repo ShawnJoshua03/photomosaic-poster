@@ -24,17 +24,41 @@ ALLOWED = IMAGE_EXTS | RAW_EXTS | VIDEO_EXTS | ARCHIVE_EXTS
 CHUNK = 1 << 20
 
 
+_WINDOWS_RESERVED = {"CON", "PRN", "AUX", "NUL", *(f"COM{i}" for i in range(1, 10)),
+                     *(f"LPT{i}" for i in range(1, 10))}
+MAX_PARALLEL_UPLOADS = 12
+SECURITY_HEADERS = {
+    # Everything the page needs is inline; nothing may load from elsewhere, and the
+    # page can't be framed by another site or leak its key through the Referer header.
+    "Content-Security-Policy": "default-src 'none'; script-src 'unsafe-inline'; "
+                               "style-src 'unsafe-inline'; connect-src 'self'; "
+                               "form-action 'none'; frame-ancestors 'none'; base-uri 'none'",
+    "Referrer-Policy": "no-referrer",
+    "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "DENY",
+    "Cache-Control": "no-store",
+}
+
+
 def _safe(name, fallback):
+    """A file or folder name that can't escape the upload folder on any OS."""
     name = Path(str(name).replace("\\", "/")).name
     name = re.sub(r"[^A-Za-z0-9._ -]", "_", name).strip(" .")[:120]
+    if name.split(".")[0].upper() in _WINDOWS_RESERVED:
+        name = "_" + name
     return name or fallback
 
 
 class _Collector:
-    def __init__(self, dest, key, title, max_mb):
+    def __init__(self, dest, key, title, max_mb, max_total_gb=20):
         self.dest, self.key, self.title, self.max_bytes = Path(dest), key, title, max_mb * 1e6
+        self.max_total = max_total_gb * 1e9
         self.lock = threading.Lock()
+        self.slots = threading.BoundedSemaphore(MAX_PARALLEL_UPLOADS)
         self.dest.mkdir(parents=True, exist_ok=True)
+
+    def used_bytes(self):
+        return sum(p.stat().st_size for p in self.dest.rglob("*") if p.is_file())
 
     def stats(self):
         files = [p for p in self.dest.rglob("*") if p.is_file() and not p.name.endswith(".part")]
@@ -59,6 +83,8 @@ class _Collector:
 def _handler(col):
     class H(BaseHTTPRequestHandler):
         server_version = "mosaic-poster"
+        sys_version = ""
+        timeout = 120  # drop connections that stall (slow-loris style)
 
         def log_message(self, fmt, *args):  # keep the console readable
             pass
@@ -72,7 +98,8 @@ def _handler(col):
             self.send_response(code)
             self.send_header("Content-Type", ctype)
             self.send_header("Content-Length", str(len(data)))
-            self.send_header("Cache-Control", "no-store")
+            for k, v in SECURITY_HEADERS.items():
+                self.send_header(k, v)
             self.end_headers()
             self.wfile.write(data)
 
@@ -117,6 +144,17 @@ def _handler(col):
                 return self._reject(415, f"{name}: not a photo or video", length)
             if length <= 0 or length > col.max_bytes:
                 return self._reject(413, "file too large or empty", length)
+            if col.used_bytes() + length > col.max_total:
+                return self._reject(507, "the upload folder is full - tell the organizer",
+                                    length)
+            if not col.slots.acquire(blocking=False):
+                return self._reject(503, "busy - retrying", length)
+            try:
+                self._receive(q, name, length)
+            finally:
+                col.slots.release()
+
+        def _receive(self, q, name, length):
             path = col.target(q.get("who", ["guest"])[0], name)
             part = path.with_name(path.name + ".part")
             try:
@@ -147,13 +185,22 @@ def _lan_ip():
         return "127.0.0.1"
 
 
-def serve(dest, port=8000, title="Send photos", key=None, max_mb=500, host="0.0.0.0"):
-    key = key or secrets.token_urlsafe(9)
-    col = _Collector(dest, key, title, max_mb)
+def serve(dest, port=8000, title="Send photos", key=None, max_mb=500, max_total_gb=20,
+          local_only=False):
+    """Run the upload page until Ctrl+C.
+
+    It listens on every network interface so phones on the same Wi-Fi can reach it
+    (local_only=True: this computer only, e.g. behind a tunnel). Access needs the key.
+    """
+    key = key or secrets.token_urlsafe(16)
+    # Listening on all interfaces is deliberate: phones on the same Wi-Fi connect here.
+    host = "127.0.0.1" if local_only else "0.0.0.0"  # nosec B104
+    col = _Collector(dest, key, title, max_mb, max_total_gb)
     httpd = ThreadingHTTPServer((host, port), _handler(col))
     httpd.daemon_threads = True
-    print(f"Collecting photos into {col.dest.resolve()}")
-    print(f"  Same Wi-Fi:   http://{_lan_ip()}:{port}/?k={key}")
+    print(f"Collecting photos into {col.dest.resolve()} (up to {max_total_gb:g} GB)")
+    if not local_only:
+        print(f"  Same Wi-Fi:   http://{_lan_ip()}:{port}/?k={key}")
     print(f"  This computer: http://localhost:{port}/?k={key}")
     print("  Friends elsewhere: run a tunnel, e.g.  cloudflared tunnel --url "
           f"http://localhost:{port}   and send them  <tunnel-url>/?k={key}")
