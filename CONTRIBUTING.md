@@ -3,7 +3,7 @@
 Bug reports, printer war stories and pull requests are welcome.
 
 ```bash
-git clone https://github.com/OWNER/photomosaic-poster.git
+git clone https://github.com/ShawnJoshua03/photomosaic-poster.git
 cd photomosaic-poster
 python -m venv .venv && . .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -e ".[dev]"
