@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self' blob:; style-src 'self'; img-src 'self' blob: data:; connect-src 'self' blob: data:; base-uri 'none'; form-action 'none'">
+  <meta name="referrer" content="no-referrer">
+  <meta name="description" content="Make a print-ready photo mosaic poster from your photos, privately in your browser. Previews how it will look on your printer's paper.">
+  <title>Tessera - photo mosaic posters</title>
+  <link rel="stylesheet" href="./src/ui/style.css">
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <h1>Tessera</h1>
+    <p class="tag">One big picture, built from all your photos. It runs on your device, so nothing is uploaded.</p>
+  </div>
+</header>
+
+<main class="wrap layout">
+  <div class="controls">
+    <section class="card" id="s-photos">
+      <h2><span class="n">1</span> Your photos</h2>
+      <div class="drop" id="drop" tabindex="0" role="button" aria-label="Add photos">
+        <strong>Drop photos, folders or .zip files here</strong>
+        <span class="muted">JPEG, PNG, HEIC, WebP, AVIF, TIFF, camera RAW. Drive and iCloud zips work as they are.</span>
+        <div class="row"><button type="button" id="pick-files">Choose photos</button><button type="button" id="pick-folder" class="ghost">Choose a folder</button></div>
+      </div>
+      <input id="in-files" type="file" multiple hidden accept="image/*,.heic,.heif,.dng,.cr2,.cr3,.nef,.arw,.raf,.orf,.rw2,.zip">
+      <input id="in-folder" type="file" hidden webkitdirectory>
+      <div class="bar" id="photo-bar" hidden><div></div></div>
+      <p id="photo-status" class="muted">No photos yet.</p>
+      <p id="photo-skips" class="muted small"></p>
+    </section>
+
+    <section class="card" id="s-target">
+      <h2><span class="n">2</span> The big picture</h2>
+      <div class="target" id="target-box">
+        <canvas id="target-view" width="280" height="280" aria-label="Big picture: click to choose what's kept"></canvas>
+        <div>
+          <button type="button" id="pick-target">Choose the photo</button>
+          <input id="in-target" type="file" hidden accept="image/*,.heic,.heif">
+          <label class="field">Zoom<input id="zoom" type="range" min="1" max="3" step="0.05" value="1"></label>
+          <label class="field">Brighten<input id="gamma" type="range" min="0.5" max="1" step="0.05" value="1"></label>
+          <p class="muted small">Click the picture to choose the centre. A large, well-lit face works best.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="card" id="s-printer">
+      <h2><span class="n">3</span> Printer and size</h2>
+      <label class="field">Where will you print it?
+        <select id="printer"></select></label>
+      <div class="two">
+        <label class="field">Size (inches)<select id="size"></select></label>
+        <label class="field">Direction<select id="orient"><option value="p">Portrait</option><option value="l">Landscape</option></select></label>
+      </div>
+      <div class="two" id="custom-size" hidden>
+        <label class="field">Width<input id="w" type="number" min="4" max="120" step="0.5"></label>
+        <label class="field">Height<input id="h" type="number" min="4" max="240" step="0.5"></label>
+      </div>
+      <label class="field">Paper<select id="paper"></select></label>
+      <p id="printer-note" class="muted small"></p>
+    </section>
+
+    <section class="card" id="s-look">
+      <h2><span class="n">4</span> The look</h2>
+      <label class="field">Photo size<select id="tiles"></select></label>
+      <label class="field">Picture clarity <small>(how far each photo's colour is pulled toward the picture)</small><input id="tint" type="range" min="0" max="1" step="0.05"></label>
+      <label class="field">Face sharpness <small>(a faint sharp copy on top)</small><input id="overlay" type="range" min="0" max="0.6" step="0.05"></label>
+      <details><summary>Colour for print</summary>
+        <label class="field">Brightness<input id="f-b" type="range" min="0.8" max="1.3" step="0.01"></label>
+        <label class="field">Contrast<input id="f-c" type="range" min="0.8" max="1.4" step="0.01"></label>
+        <label class="field">Saturation<input id="f-s" type="range" min="0.6" max="1.5" step="0.01"></label>
+        <button type="button" class="ghost" id="reshuffle">Reshuffle the layout</button>
+      </details>
+    </section>
+  </div>
+
+  <div class="results">
+    <section class="card sticky">
+      <div class="head"><h2>Preview</h2><span id="busy" class="muted small" aria-live="polite"></span></div>
+      <div class="seg" role="tablist">
+        <button type="button" role="tab" id="t-paper" aria-selected="true">On paper</button>
+        <button type="button" role="tab" id="t-screen" aria-selected="false">On screen</button>
+      </div>
+      <canvas id="view" class="view" width="10" height="10"></canvas>
+      <p id="view-note" class="muted small"></p>
+      <div class="close">
+        <figure><canvas id="close-a" width="10" height="10"></canvas><figcaption>Up close: 6 x 4 inches of the print at actual size</figcaption></figure>
+        <figure><canvas id="close-b" width="10" height="10"></canvas><figcaption>Magnified 3x</figcaption></figure>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Checks and recommendations</h2>
+      <ul id="findings" class="findings"></ul>
+    </section>
+
+    <section class="card" id="s-download">
+      <h2><span class="n">5</span> Download</h2>
+      <div class="two">
+        <label class="field">File<select id="format"><option value="pdf">PDF</option><option value="jpg">JPEG</option></select></label>
+        <label class="field">Pieces<select id="panels"><option value="1">One file</option><option value="2">2 panels</option><option value="3">3 panels</option></select></label>
+      </div>
+      <label class="field">Size limit (MB, 0 = none)<input id="maxmb" type="number" min="0" step="1"></label>
+      <div class="row">
+        <button type="button" id="dl" class="primary">Download poster</button>
+        <button type="button" id="dl-strip" class="ghost">Test strip (3 in)</button>
+      </div>
+      <div class="bar" id="exp-bar" hidden><div></div></div>
+      <p id="exp-status" class="muted small" aria-live="polite"></p>
+      <ul id="checklist" class="small"></ul>
+    </section>
+  </div>
+</main>
+
+<footer class="wrap muted small">
+  Open source (MIT). <a href="https://github.com/ShawnJoshua03/photomosaic-poster" rel="noopener noreferrer">Source and the command-line version</a>.
+  Your photos never leave this page. Previews approximate the paper; ask your print shop for its colour profile for an exact match.
+</footer>
+<script type="module" src="./src/ui/main.ts"></script>
+</body>
+</html>

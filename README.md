@@ -22,6 +22,13 @@ covers the whole job, not just the mosaic:
 *The demo is built from generated images. Run `python examples/make_demo.py` to make
 it yourself.*
 
+## Try it in your browser
+
+**Tessera** (in the `web/` folder) is the same engine as a website: drop in your photos and the big
+picture, choose your printer, see how it will look on that paper, and download a print-ready PDF or
+JPEG. It runs entirely on your device, so nothing is uploaded. It makes RGB files; use the Python
+command-line tool below for CMYK, camera RAW decoding and batch work.
+
 ## Install
 
 Requires Python 3.9 or newer.
