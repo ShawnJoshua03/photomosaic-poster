@@ -1,5 +1,7 @@
 # photomosaic-poster
 
+**[Portfolio](https://shawnjoshua03.github.io/)**
+
 Turn one photo plus hundreds (or thousands) of photos into a **print-ready photo mosaic
 poster**. Up close you see every little photo; from across the room you see the big
 picture.
