@@ -23,7 +23,11 @@ def _color(s):
     s = s.lstrip("#")
     if len(s) != 6:
         raise argparse.ArgumentTypeError("color must be hex like 111111 or #ffffff")
-    return tuple(int(s[i:i + 2], 16) for i in (0, 2, 4))
+    try:
+        return tuple(int(s[i:i + 2], 16) for i in (0, 2, 4))
+    except ValueError:
+        raise argparse.ArgumentTypeError("invalid color; use a six-digit hex color "
+                                         "like 111111 or #ffffff")
 
 
 def _size(s):
@@ -212,7 +216,9 @@ def cmd_make(argv):
         print("\nNot rendered - fix these first (or add --force):", file=sys.stderr)
         _print_findings([f for f in e.findings if f.level == "error"])
         return 2
-    except (ValueError, FileNotFoundError) as e:
+    except FileNotFoundError as e:
+        ap.error(f"{e}; check that the target and photo paths exist")
+    except ValueError as e:
         ap.error(str(e))
     print("\nRecommendations:", file=sys.stderr)
     _print_findings([f for f in result.findings if f.level != "ok"] or result.findings)
@@ -234,7 +240,9 @@ def cmd_check(argv):
     try:
         opt = options_from_args(args)
         plan, findings, _ = preflight(opt)
-    except (ValueError, FileNotFoundError) as e:
+    except FileNotFoundError as e:
+        ap.error(f"{e}; check that the target and photo paths exist")
+    except ValueError as e:
         ap.error(str(e))
     print(f"{plan.width_in:g} x {plan.height_in:g} in at {plan.dpi:g} DPI -> {plan.cols} x "
           f"{plan.rows} tiles of {plan.tile_in:.2f} in, {opt.output}"
@@ -303,7 +311,8 @@ def cmd_proof(argv):
     printer = PRINTERS.get(args.printer) if args.printer else None
     paper = PAPERS.get(args.paper or (printer.paper if printer else ""), None)
     if not (paper or args.printer_profile):
-        ap.error("choose --printer, --paper or --printer-profile")
+        ap.error("proof needs to know what it is printed on - add --paper (for example "
+                 f"--paper {sorted(PAPERS)[0]}), --printer, or --printer-profile your.icc")
     im = Image.open(args.file)
     im.draft("RGB", (2000, 2000))
     if im.mode == "CMYK":

@@ -103,6 +103,19 @@ def test_cli_printers_and_check(target, photos, tmp_path, capsys):
     assert "--size 36x48" in capsys.readouterr().err
 
 
+def test_cli_invalid_color_explains_fix(target, photos, capsys):
+    with pytest.raises(SystemExit) as exc:
+        main([str(target), str(photos), "--bg", "gggggg"])
+    assert exc.value.code == 2
+    assert "invalid color; use a six-digit hex color like 111111 or #ffffff" in capsys.readouterr().err
+
+
+def test_cli_check_missing_photos_suggests_checking_paths(target, tmp_path, capsys):
+    with pytest.raises(SystemExit) as e:
+        main(["check", str(target), str(tmp_path / "missing-photos")])
+    assert e.value.code == 2
+    assert "check that the target and photo paths exist" in capsys.readouterr().err
+
 def test_cli_make_with_printer_preset(target, photos, tmp_path):
     out = tmp_path / "p.pdf"
     code = main([str(target), str(photos), "--printer", "plotter-bond", "--size", "6x9",
@@ -118,3 +131,12 @@ def test_cli_proof(tmp_path, capsys):
     assert main(["proof", str(f), "--paper", "bond"]) == 0
     proof = Image.open(tmp_path / "poster.proof.jpg")
     assert max(proof.getpixel((150, 200))) < 220  # paper dulls the bright blue
+
+
+def test_cli_proof_without_paper_says_how_to_fix(tmp_path, capsys):
+    f = tmp_path / "poster.jpg"
+    Image.new("RGB", (30, 40), (30, 120, 220)).save(f)
+    with pytest.raises(SystemExit) as e:
+        main(["proof", str(f)])
+    assert e.value.code == 2
+    assert "add --paper (for example --paper " in capsys.readouterr().err
