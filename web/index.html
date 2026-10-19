@@ -3,23 +3,46 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self' blob:; style-src 'self'; img-src 'self' blob: data:; connect-src 'self' blob: data:; base-uri 'none'; form-action 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; font-src 'self'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self' blob:; style-src 'self'; img-src 'self' blob: data:; connect-src 'self' blob: data:; base-uri 'none'; form-action 'none'">
   <meta name="referrer" content="no-referrer">
   <meta name="description" content="Make a print-ready photo mosaic poster from your photos, privately in your browser. Previews how it will look on your printer's paper.">
   <title>Tessera - photo mosaic posters</title>
   <link rel="stylesheet" href="./src/ui/style.css">
 </head>
 <body>
-<header class="top">
+<header class="hero" id="top">
   <div class="wrap">
-    <h1>Tessera</h1>
-    <p class="tag">One big picture, built from all your photos. It runs on your device, so nothing is uploaded.</p>
+    <div class="topbar"><span class="logo">Tessera</span><a href="https://github.com/ShawnJoshua03/photomosaic-poster" rel="noopener noreferrer">GitHub</a></div>
+    <div class="hero-grid">
+      <div class="hero-copy">
+        <h1>Turn a thousand photos into <mark>one big one.</mark></h1>
+        <p class="lede">Drop in your pictures, pick a face or a view for the big picture, and get a poster file your print shop can use. It works on your own computer or phone.</p>
+        <div class="hero-cta">
+          <a class="nb-button default go" id="start" href="#s-photos">Make a poster</a>
+          <a class="nb-button default alt" href="https://github.com/ShawnJoshua03/photomosaic-poster" rel="noopener noreferrer">See the code</a>
+        </div>
+      </div>
+      <figure class="hero-art" id="hero-art">
+        <canvas id="hero-canvas" aria-label="A picture of a sunset built out of many small made-up photos. Hover a tile to enlarge it."></canvas>
+        <figcaption id="hero-cap">Every tile is drawn by code. Hover one.</figcaption>
+        <span class="sticker">Nothing is uploaded</span>
+      </figure>
+    </div>
   </div>
 </header>
 
-<main class="wrap layout">
+<section class="wrap how" aria-label="How it works">
+  <ol class="steps">
+    <li class="s1"><b>1</b><span>Throw in <em>all</em> your photos. Folders, zips, phone exports, the lot.</span></li>
+    <li class="s2"><b>2</b><span>Pick the big picture. A big, well-lit face works best.</span></li>
+    <li class="s3"><b>3</b><span>Check the preview on your printer's paper, then download the PDF.</span></li>
+  </ol>
+  <p class="aside">Your photos stay in this browser tab. HEIC and camera RAW files are fine. Previews pretend to be the paper, so you see the colours before you spend on ink.</p>
+</section>
+
+<main class="wrap layout" id="tool">
   <div class="controls">
-    <section class="card" id="s-photos">
+    <section class="nb-card panel" id="s-photos">
       <h2><span class="n">1</span> Your photos</h2>
       <div class="drop" id="drop" tabindex="0" role="button" aria-label="Add photos">
         <strong>Drop photos, folders or .zip files here</strong>
@@ -33,7 +56,7 @@
       <p id="photo-skips" class="muted small"></p>
     </section>
 
-    <section class="card" id="s-target">
+    <section class="nb-card panel" id="s-target">
       <h2><span class="n">2</span> The big picture</h2>
       <div class="target" id="target-box">
         <canvas id="target-view" width="280" height="280" aria-label="Big picture: click to choose what's kept"></canvas>
@@ -47,7 +70,7 @@
       </div>
     </section>
 
-    <section class="card" id="s-printer">
+    <section class="nb-card panel" id="s-printer">
       <h2><span class="n">3</span> Printer and size</h2>
       <label class="field">Where will you print it?
         <select id="printer"></select></label>
@@ -63,7 +86,7 @@
       <p id="printer-note" class="muted small"></p>
     </section>
 
-    <section class="card" id="s-look">
+    <section class="nb-card panel" id="s-look">
       <h2><span class="n">4</span> The look</h2>
       <label class="field">Photo size<select id="tiles"></select></label>
       <label class="field">Picture clarity <small>(how far each photo's colour is pulled toward the picture)</small><input id="tint" type="range" min="0" max="1" step="0.05"></label>
@@ -78,7 +101,7 @@
   </div>
 
   <div class="results">
-    <section class="card sticky">
+    <section class="nb-card panel sticky">
       <div class="head"><h2>Preview</h2><span id="busy" class="muted small" aria-live="polite"></span></div>
       <div class="seg" role="tablist">
         <button type="button" role="tab" id="t-paper" aria-selected="true">On paper</button>
@@ -92,12 +115,12 @@
       </div>
     </section>
 
-    <section class="card">
+    <section class="nb-card panel">
       <h2>Checks and recommendations</h2>
       <ul id="findings" class="findings"></ul>
     </section>
 
-    <section class="card" id="s-download">
+    <section class="nb-card panel" id="s-download">
       <h2><span class="n">5</span> Download</h2>
       <div class="two">
         <label class="field">File<select id="format"><option value="pdf">PDF</option><option value="jpg">JPEG</option></select></label>

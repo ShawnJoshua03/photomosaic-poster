@@ -1,4 +1,5 @@
 import { CHECKLIST } from "../engine/advice";
+import { initHero } from "./hero";
 import { autoCols } from "../engine/layout";
 import { collectFiles, decodeAll, type Library } from "../engine/library";
 import { PAPERS, PRINTERS, SIZES } from "../engine/presets";
@@ -278,3 +279,4 @@ on("dl-strip", "click", () => void download(true));
 
 syncControls();
 refresh(true);
+initHero();

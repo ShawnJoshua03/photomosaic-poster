@@ -4,5 +4,5 @@ import { defineConfig } from "vite";
 export default defineConfig({
   base: "./",
   worker: { format: "es" },
-  build: { target: "es2022" },
+  build: { target: "es2022", assetsInlineLimit: 0 }, // fonts stay files: the CSP has no data: in font-src
 });
