@@ -16,34 +16,76 @@
     <div class="hero-grid">
       <div class="hero-copy">
         <h1>Turn a thousand photos into <mark>one big one.</mark></h1>
+        <p class="sticker-row"><span class="sticker">Nothing is uploaded</span></p>
         <p class="lede">Drop in your pictures, pick a face or a view for the big picture, and get a poster file your print shop can use. It works on your own computer or phone.</p>
         <div class="hero-cta">
           <a class="nb-button default go" id="start" href="#s-photos">Make a poster</a>
           <a class="nb-button default alt" href="https://github.com/ShawnJoshua03/photomosaic-poster" rel="noopener noreferrer">See the code</a>
         </div>
+        <p class="privacy">Your photos stay in this browser tab. HEIC and camera RAW files are fine. This web version makes RGB files (PDF or JPEG).</p>
       </div>
       <figure class="hero-art" id="hero-art">
-        <canvas id="hero-canvas" aria-label="A picture of a sunset built out of many small made-up photos. Hover a tile to enlarge it."></canvas>
-        <figcaption id="hero-cap">Every tile is drawn by code. Hover one.</figcaption>
-        <span class="sticker">Nothing is uploaded</span>
+        <div class="poster-frame" id="hero-frame">
+          <img id="hero-img" src="./demo/demo.jpg" width="750" height="1000" alt="A finished demo mosaic poster: a red heart under a pale sun, built from 600 small generated pictures.">
+          <span class="region" id="hero-region" aria-hidden="true"><i>real close-up</i></span>
+          <div class="loupe" id="hero-loupe" aria-hidden="true"></div>
+        </div>
+        <figcaption id="hero-cap">The demo poster, built from 600 generated pictures. Move over it to look at the little photos. Inside the dashed box you see the real close-up; elsewhere the loupe only enlarges this picture.</figcaption>
+        <label class="scrub">Zoom <span><em>Across the room</em><input id="hero-zoom" type="range" min="1.5" max="6" step="0.1" value="4.8"><em>Up close</em></span></label>
+        <button type="button" class="primary js-sample">Try with sample photos</button>
       </figure>
     </div>
   </div>
 </header>
 
+<section class="wrap proof" aria-label="From one photo to a poster" id="proof">
+  <h2 class="sec">One photo in. One poster out.</h2>
+  <div class="proof-grid">
+    <figure><div class="pf"><img src="./demo/demo-target.jpg" width="300" height="400" alt="The target picture: a heart at sunset."></div>
+      <figcaption><b>1. The big picture</b> A simple, bold picture reads best.</figcaption></figure>
+    <figure><div class="pf"><img src="./demo/demo.jpg" width="750" height="1000" alt="The finished poster."></div>
+      <figcaption><b>2. The poster</b> 600 generated photos, 40 tiles across, 18 x 24 in at 200 DPI.</figcaption></figure>
+    <figure><div class="pf scrubber" id="proof-frame" role="img" aria-label="Close-up of the poster. Use the slider to move from the whole poster to individual photos.">
+        <span class="tag" id="proof-tag">Closer</span></div>
+      <label class="scrub">Zoom <span><em>Across the room</em><input id="proof-zoom" type="range" min="0" max="1" step="0.01" value="0.7"><em>Up close</em></span></label>
+      <figcaption><b>3. Up close</b> Real pixels from the 200 DPI file: 4.5 x 3 in of the print, each tile its own photo.</figcaption></figure>
+  </div>
+  <p class="foot-note">The demo uses generated pictures, not real photos. The repo's <code>examples/make_demo.py</code> rebuilds it.</p>
+</section>
+
 <section class="wrap how" aria-label="How it works">
   <ol class="steps">
-    <li class="s1"><b>1</b><span>Throw in <em>all</em> your photos. Folders, zips, phone exports, the lot.</span></li>
-    <li class="s2"><b>2</b><span>Pick the big picture. A big, well-lit face works best.</span></li>
-    <li class="s3"><b>3</b><span>Check the preview on your printer's paper, then download the PDF.</span></li>
+    <li><b>1</b><span>Throw in <em>all</em> your photos. Folders, zips, phone exports, the lot.</span></li>
+    <li><b>2</b><span>Pick the big picture. A big, well-lit face works best.</span></li>
+    <li><b>3</b><span>Check the preview on your printer's paper, then download the PDF.</span></li>
   </ol>
-  <p class="aside">Your photos stay in this browser tab. HEIC and camera RAW files are fine. Previews pretend to be the paper, so you see the colours before you spend on ink.</p>
+</section>
+
+<section class="wrap shop" aria-label="Pick your printer first">
+  <h2 class="sec">Pick your printer first</h2>
+  <div class="shop-grid">
+    <ul class="facts">
+      <li><b>DPI</b><span>Each preset knows the resolution the printer wants, such as 300 for plotters and print shops.</span></li>
+      <li><b>Size cap</b><span>Roll width and size limits are checked. The plotter preset caps width at 36 in.</span></li>
+      <li><b>Paper preview</b><span>See the poster as glossy, luster, matte, bond, canvas or plain paper.</span></li>
+      <li><b>File limit</b><span>Set a size limit in MB to match the upload form. The plotter preset uses 75 MB.</span></li>
+    </ul>
+    <div class="nb-card sample-checks">
+      <h3>Example Checks <small>(plotter on bond paper, 40 in wide, 150 DPI)</small></h3>
+      <ul class="findings">
+        <li class="error"><span class="tg">error</span><div><div>40 in is wider than this printer's 36 in maximum</div><div class="fx">Fix: Use 36 x 54 in</div></div></li>
+        <li class="warn"><span class="tg">warn</span><div><div>150 DPI is below the 300 DPI this printer wants</div><div class="fx">Fix: Set quality to 300 DPI</div></div></li>
+      </ul>
+    </div>
+  </div>
+  <p class="rgb"><b>RGB only on the web.</b> This page makes RGB files, which most shops convert. CMYK output needs the <a href="https://github.com/ShawnJoshua03/photomosaic-poster" rel="noopener noreferrer">command-line tool</a>.</p>
 </section>
 
 <main class="wrap layout" id="tool">
   <div class="controls">
     <section class="nb-card panel" id="s-photos">
       <h2><span class="n">1</span> Your photos</h2>
+      <p class="try-line"><button type="button" class="primary js-sample">Try with sample photos</button><span class="muted small">No photos handy? Fills every step with made-up ones.</span></p>
       <div class="drop" id="drop" tabindex="0" role="button" aria-label="Add photos">
         <strong>Drop photos, folders or .zip files here</strong>
         <span class="muted">JPEG, PNG, HEIC, WebP, AVIF, TIFF, camera RAW. Drive and iCloud zips work as they are.</span>
@@ -59,7 +101,7 @@
     <section class="nb-card panel" id="s-target">
       <h2><span class="n">2</span> The big picture</h2>
       <div class="target" id="target-box">
-        <canvas id="target-view" width="280" height="280" aria-label="Big picture: click to choose what's kept"></canvas>
+        <div class="tv-wrap"><canvas id="target-view" width="280" height="280" class="empty" aria-label="Big picture: click to choose what's kept"></canvas><span id="target-empty">Your big picture shows here</span></div>
         <div>
           <button type="button" id="pick-target">Choose the photo</button>
           <input id="in-target" type="file" hidden accept="image/*,.heic,.heif">
@@ -101,12 +143,13 @@
   </div>
 
   <div class="results">
-    <section class="nb-card panel sticky">
+    <section class="nb-card panel" id="s-preview">
       <div class="head"><h2>Preview</h2><span id="busy" class="muted small" aria-live="polite"></span></div>
       <div class="seg" role="tablist">
         <button type="button" role="tab" id="t-paper" aria-selected="true">On paper</button>
         <button type="button" role="tab" id="t-screen" aria-selected="false">On screen</button>
       </div>
+      <div id="preview-empty" class="empty-box"><img src="./demo/demo.jpg" alt="" width="750" height="1000"><div><b>Your poster will appear here.</b><span>This is the demo, not yours. Add photos and a big picture, or fill it all in one click.</span><button type="button" class="primary js-sample">Try with sample photos</button></div></div>
       <canvas id="view" class="view" width="10" height="10"></canvas>
       <p id="view-note" class="muted small"></p>
       <div class="close">
@@ -120,16 +163,17 @@
       <ul id="findings" class="findings"></ul>
     </section>
 
-    <section class="nb-card panel" id="s-download">
+    <section class="nb-card panel locked" id="s-download">
       <h2><span class="n">5</span> Download</h2>
+      <p id="dl-lock" class="muted small">Unlocks when your poster preview is ready.</p>
       <div class="two">
         <label class="field">File<select id="format"><option value="pdf">PDF</option><option value="jpg">JPEG</option></select></label>
         <label class="field">Pieces<select id="panels"><option value="1">One file</option><option value="2">2 panels</option><option value="3">3 panels</option></select></label>
       </div>
-      <label class="field">Size limit (MB, 0 = none)<input id="maxmb" type="number" min="0" step="1"></label>
+      <label class="field">File size limit (MB) <small>Most upload forms cap at 25-100 MB. 0 means no limit.</small><input id="maxmb" type="number" min="0" step="1"></label>
       <div class="row">
-        <button type="button" id="dl" class="primary">Download poster</button>
-        <button type="button" id="dl-strip" class="ghost">Test strip (3 in)</button>
+        <button type="button" id="dl" class="primary" disabled>Download poster</button>
+        <button type="button" id="dl-strip" class="ghost" disabled>Test strip (3 in)</button>
       </div>
       <div class="bar" id="exp-bar" hidden><div></div></div>
       <p id="exp-status" class="muted small" aria-live="polite"></p>

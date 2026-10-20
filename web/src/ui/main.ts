@@ -1,5 +1,6 @@
 import { CHECKLIST } from "../engine/advice";
 import { initHero } from "./hero";
+import { makeSamples } from "./sample";
 import { autoCols } from "../engine/layout";
 import { collectFiles, decodeAll, type Library } from "../engine/library";
 import { PAPERS, PRINTERS, SIZES } from "../engine/presets";
@@ -10,12 +11,14 @@ import {
 } from "../engine/studio";
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
-let S: Settings = defaultSettings();
+const DEFAULT_MAX_MB = 50; // a sensible upload cap when no printer sets one
+let S: Settings = { ...defaultSettings(), maxMB: DEFAULT_MAX_MB };
 const lib: Library = { photos: [], skipped: {} };
 let target: Target | null = null;
 let built: Built | null = null;
 let view: "paper" | "screen" = "paper";
 let token = 0; // newest render wins
+let exporting = false;
 
 // ---- setup of the controls ---------------------------------------------------------
 
@@ -123,6 +126,8 @@ tv.addEventListener("click", (e) => {
   refresh(true);
 });
 function drawTargetThumb() {
+  tv.classList.toggle("empty", !target);
+  $("target-empty").hidden = !!target;
   const g = tv.getContext("2d")!;
   g.clearRect(0, 0, tv.width, tv.height);
   if (!target) return;
@@ -150,6 +155,7 @@ async function update() {
   const my = ++token;
   if (!lib.photos.length || !target) {
     $("busy").textContent = "";
+    setReady(false);
     const list = $("findings");
     list.replaceChildren(li("tip", !lib.photos.length ? "Add your photos" : "Choose the big picture",
       "Both are needed to see the poster."));
@@ -178,7 +184,16 @@ async function update() {
   paint($("close-b") as HTMLCanvasElement, m);
   renderFindings(b);
   drawTargetThumb();
+  setReady(true);
   $("busy").textContent = "";
+}
+
+function setReady(ready: boolean) {
+  $("preview-empty").hidden = ready;
+  $("s-download").classList.toggle("locked", !ready);
+  $("dl-lock").hidden = ready;
+  for (const id of ["dl", "dl-strip"]) $<HTMLButtonElement>(id).disabled = !ready || exporting;
+  if (!ready) { const v = $<HTMLCanvasElement>("view"); v.width = 10; v.height = 10; }
 }
 
 function paint(cv: HTMLCanvasElement, img: ImageData) {
@@ -205,7 +220,11 @@ function renderFindings(b: Built) {
 
 const on = (id: string, ev: string, fn: () => void) => $(id).addEventListener(ev, fn);
 const num = (id: string) => parseFloat($<HTMLInputElement>(id).value);
-on("printer", "change", () => { S = applyPrinter(S, $<HTMLSelectElement>("printer").value); syncControls(); refresh(true); });
+on("printer", "change", () => {
+  S = applyPrinter(S, $<HTMLSelectElement>("printer").value);
+  if (!S.maxMB) S = { ...S, maxMB: DEFAULT_MAX_MB };
+  syncControls(); refresh(true);
+});
 on("paper", "change", () => { S = withPaper(S, $<HTMLSelectElement>("paper").value); syncControls(); refresh(false); });
 function setSize(w: number, h: number) { S = { ...S, widthIn: w, heightIn: h }; syncControls(); refresh(true); }
 on("size", "change", () => {
@@ -241,7 +260,6 @@ for (const [k, el] of Object.entries(tabs) as ["paper" | "screen", HTMLElement][
 
 // ---- export ------------------------------------------------------------------------
 
-let exporting = false;
 async function download(testStrip: boolean) {
   if (!built || !target || exporting) { $("exp-status").textContent = "Add your photos and the big picture first."; return; }
   const errors = findings(lib, built, S).filter((f) => f.level === "error");
@@ -277,6 +295,33 @@ function saveBlob(blob: Blob, name: string) {
 on("dl", "click", () => void download(false));
 on("dl-strip", "click", () => void download(true));
 
+// ---- sample photos -----------------------------------------------------------------
+
+let sampling = false;
+async function trySamples() {
+  if (sampling) return;
+  sampling = true;
+  const btns = [...document.querySelectorAll<HTMLButtonElement>(".js-sample")];
+  btns.forEach((b) => { b.disabled = true; });
+  $("photo-status").textContent = "Making sample photos...";
+  try {
+    const { photos, target: tf } = await makeSamples();
+    lib.photos.length = 0; lib.skipped = {};
+    target = await loadTarget(tf);
+    S = { ...S, crop: { zoom: 1, fx: 0.5, fy: 0.45 }, widthIn: 24, heightIn: 36 };
+    await addPhotos(photos);
+    $("photo-status").textContent = `${lib.photos.length} made-up sample photos ready. Add your own any time.`;
+    $("s-preview").scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
+  } catch (e) {
+    $("photo-status").textContent = `Sample photos failed: ${e instanceof Error ? e.message : e}`;
+  }
+  btns.forEach((b) => { b.disabled = false; });
+  sampling = false;
+}
+document.querySelectorAll(".js-sample").forEach((b) => b.addEventListener("click", () => void trySamples()));
+
 syncControls();
+setReady(false);
 refresh(true);
 initHero();
+if (location.hash === "#sample") void trySamples(); // deep link: open the page with the sample result

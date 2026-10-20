@@ -26,6 +26,7 @@ venv/
 *.mov
 *.mp4
 !docs/*.jpg
+!web/public/demo/*.jpg
 
 # Generated demo inputs (python examples/make_demo.py)
 examples/demo_input/
