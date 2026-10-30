@@ -50,14 +50,14 @@
       <label class="scrub">Zoom <span><em>Across the room</em><input id="proof-zoom" type="range" min="0" max="1" step="0.01" value="0.7"><em>Up close</em></span></label>
       <figcaption><b>3. Up close</b> Real pixels from the 200 DPI file: 4.5 x 3 in of the print, each tile its own photo.</figcaption></figure>
   </div>
-  <p class="foot-note">The demo uses generated pictures, not real photos. The repo's <code>examples/make_demo.py</code> rebuilds it.</p>
+  <p class="foot-note">The demo uses generated pictures, not real photos. The repo’s <code>examples/make_demo.py</code> rebuilds it.</p>
 </section>
 
 <section class="wrap how" aria-label="How it works">
   <ol class="steps">
     <li><b>1</b><span>Throw in <em>all</em> your photos. Folders, zips, phone exports, the lot.</span></li>
     <li><b>2</b><span>Pick the big picture. A big, well-lit face works best.</span></li>
-    <li><b>3</b><span>Check the preview on your printer's paper, then download the PDF.</span></li>
+    <li><b>3</b><span>Check the preview on your printer’s paper, then download the PDF.</span></li>
   </ol>
 </section>
 
@@ -73,7 +73,7 @@
     <div class="nb-card sample-checks">
       <h3>Example Checks <small>(plotter on bond paper, 40 in wide, 150 DPI)</small></h3>
       <ul class="findings">
-        <li class="error"><span class="tg">error</span><div><div>40 in is wider than this printer's 36 in maximum</div><div class="fx">Fix: Use 36 x 54 in</div></div></li>
+        <li class="error"><span class="tg">error</span><div><div>40 in is wider than this printer’s 36 in maximum</div><div class="fx">Fix: Use 36 x 54 in</div></div></li>
         <li class="warn"><span class="tg">warn</span><div><div>150 DPI is below the 300 DPI this printer wants</div><div class="fx">Fix: Set quality to 300 DPI</div></div></li>
       </ul>
     </div>
@@ -131,7 +131,7 @@
     <section class="nb-card panel" id="s-look">
       <h2><span class="n">4</span> The look</h2>
       <label class="field">Photo size<select id="tiles"></select></label>
-      <label class="field">Picture clarity <small>(how far each photo's colour is pulled toward the picture)</small><input id="tint" type="range" min="0" max="1" step="0.05"></label>
+      <label class="field">Picture clarity <small>(how far each photo’s colour is pulled toward the picture)</small><input id="tint" type="range" min="0" max="1" step="0.05"></label>
       <label class="field">Face sharpness <small>(a faint sharp copy on top)</small><input id="overlay" type="range" min="0" max="0.6" step="0.05"></label>
       <details><summary>Colour for print</summary>
         <label class="field">Brightness<input id="f-b" type="range" min="0.8" max="1.3" step="0.01"></label>
@@ -150,11 +150,11 @@
         <button type="button" role="tab" id="t-screen" aria-selected="false">On screen</button>
       </div>
       <div id="preview-empty" class="empty-box"><img src="./demo/demo.jpg" alt="" width="750" height="1000"><div><b>Your poster will appear here.</b><span>This is the demo, not yours. Add photos and a big picture, or fill it all in one click.</span><button type="button" class="primary js-sample">Try with sample photos</button></div></div>
-      <canvas id="view" class="view" width="10" height="10"></canvas>
+      <canvas id="view" class="view" width="10" height="10" aria-label="Poster preview"></canvas>
       <p id="view-note" class="muted small"></p>
       <div class="close">
-        <figure><canvas id="close-a" width="10" height="10"></canvas><figcaption>Up close: 6 x 4 inches of the print at actual size</figcaption></figure>
-        <figure><canvas id="close-b" width="10" height="10"></canvas><figcaption>Magnified 3x</figcaption></figure>
+        <figure><canvas id="close-a" width="10" height="10" aria-label="Close-up of the poster at actual size"></canvas><figcaption>Up close: 6 x 4 inches of the print at actual size</figcaption></figure>
+        <figure><canvas id="close-b" width="10" height="10" aria-label="The same close-up magnified 3 times"></canvas><figcaption>Magnified 3x</figcaption></figure>
       </div>
     </section>
 
@@ -165,7 +165,7 @@
 
     <section class="nb-card panel locked" id="s-download">
       <h2><span class="n">5</span> Download</h2>
-      <p id="dl-lock" class="muted small">Unlocks when your poster preview is ready.</p>
+      <p id="dl-lock" class="muted small">Ready when your poster preview is.</p>
       <div class="two">
         <label class="field">File<select id="format"><option value="pdf">PDF</option><option value="jpg">JPEG</option></select></label>
         <label class="field">Pieces<select id="panels"><option value="1">One file</option><option value="2">2 panels</option><option value="3">3 panels</option></select></label>
